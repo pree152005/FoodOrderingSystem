@@ -1,0 +1,65 @@
+import React, { createContext, useCallback, useContext, useState } from "react";
+
+const ToastContext = createContext(null);
+
+let idCounter = 0;
+
+export function ToastProvider({ children }) {
+    const [toasts, setToasts] = useState([]);
+
+    const removeToast = useCallback((id) => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, []);
+
+    const showToast = useCallback(
+        (message, type = "success") => {
+            const id = ++idCounter;
+            setToasts((prev) => [...prev, { id, message, type }]);
+            setTimeout(() => removeToast(id), 4000);
+        },
+        [removeToast]
+    );
+
+    return (
+        <ToastContext.Provider value={{ showToast }}>
+            {children}
+            <div className="toast-container position-fixed top-0 end-0 p-3" style={{ zIndex: 1080 }}>
+                {toasts.map((t) => (
+                    <div
+                        key={t.id}
+                        className={`toast show align-items-center border-0 mb-2 toast-${t.type}`}
+                        role="alert"
+                    >
+                        <div className="d-flex">
+                            <div className="toast-body fw-medium">
+                                <i
+                                    className={`bi ${
+                                        t.type === "success"
+                                            ? "bi-check-circle-fill"
+                                            : t.type === "error"
+                                            ? "bi-exclamation-triangle-fill"
+                                            : "bi-info-circle-fill"
+                                    } me-2`}
+                                ></i>
+                                {t.message}
+                            </div>
+                            <button
+                                type="button"
+                                className="btn-close btn-close-white me-2 m-auto"
+                                onClick={() => removeToast(t.id)}
+                            ></button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </ToastContext.Provider>
+    );
+}
+
+export function useToast() {
+    const ctx = useContext(ToastContext);
+    if (!ctx) {
+        throw new Error("useToast must be used within a ToastProvider");
+    }
+    return ctx;
+}
